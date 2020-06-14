@@ -1,0 +1,100 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=2cm]{geometry} % change margins
+\usepackage{titlesec} % format titles
+\usepackage{parskip} % stop paragraph indentation
+\usepackage{hyperref} % create clickable links
+\usepackage{amsmath} % allows use of align environment
+\usepackage[bottom]{footmisc} % fixes footnote to the bottom of a page
+
+\titleformat{\section}[hang] 
+{\normalfont\large\bfseries\underline}{\thesection.}{0.15cm}{} 
+\titleformat{\subsection}[hang]{\normalfont\bfseries\underline}{}{}{} 
+% format section and subsection title so that they are bold and underlined
+
+\titlespacing{\subsection}{0pt}{0.15cm}{-0.1cm}{}
+% remove spacing after subsection title
+
+\setcounter{section}{-1}
+% start chapter numbers at 0
+
+% =================================
+% title page
+\title{\vspace{6cm} \textbf{Methods To Predict the Price of Cryptocurrencies}}
+\date{}
+\author{TCF}
+
+\begin{document}
+
+\maketitle
+\pagebreak
+
+% =================================
+% definitions which are not limited to just one method
+\section{Introductory Definitions}
+
+A \textbf{time series} is a sequence of numerical data points taken in successive order on any variable that changes over time. For example, in investing, a time series is used to track the movement of the price of assets. There is no minimum or maximum amount of time that must be included neither is there a fixed step length. This allows for a large flexibility in how the data can be gathered. \footnote[1]{\href{https://www.investopedia.com/terms/t/timeseries.asp}{Time series}}
+
+The \textbf{lag operator} of a time series is a function which offsets a time series such that the `lagged' values align with the actual time series. An example of the lag operator acting on a time series with lags of 1 and 2 is shown below: \footnote[2]{\href{https://www.business-science.io/timeseries-analysis/2017/08/30/tidy-timeseries-analysis-pt-4.html}{Lag operator}}
+\begin{table}[h]
+	\centering
+	\begin{tabular}{ |p{2cm}||p{2cm}|p{2cm}|p{2cm}| }
+	\hline
+	Date & $V_t$ & $V_{t-1}$ & $V_{t-1}$ \\
+	\hline
+	01/01/2020 & 0 & NA & NA \\
+	\hline
+	02/01/2020 & 1 & 0 & NA \\
+	\hline
+	03/01/2020 & 2 & 1 & 0 \\
+	\hline
+	04/01/2020 & 3 & 2 & 1 \\
+	\hline
+	05/01/2020 & 4 & 3 & 2 \\
+	\hline
+	\end{tabular}
+\end{table}
+
+In economic models, an \textbf{exogenous variable} is one whose value is determined outside the model and is imposed on the model, an exogenous change is a change in an exogenous variable. Whereas, an \textbf{endogenous variable} is a variable whose value is determined by the model. An endogenous change is a change in an endogenous variable in response to an exogenous change that is imposed upon the model. \footnote[3]{\href{https://en.wikipedia.org/wiki/Exogenous_and_endogenous_variables}{Exogenous and endogenous variables}}
+
+If a time series is \textbf{stationary}, intuitively, the statistical properties of a process generating the time series do not change over time. It does not mean that the time series foes not change over time, just that the way it change does not itself change over time. \footnote[4]{\href{https://towardsdatascience.com/stationarity-in-time-series-analysis-90c94f27322}{Stationarity in time series analysis}}
+
+\pagebreak
+
+% =================================
+% VARS
+\section{Vector Autoregression}
+
+\subsection{Intuition}
+A model, such as VAR, is said to be autoregressive if the predictions for future values of a time series are calculated using a linear function of previous values. That is, when using autoregression, time series are modelled as linear combinations of their own lags. Hence, a typical equation for an autoregression model of order $p$, AR$[p]$, would be
+\begin{align*}
+	Y_t = \alpha + \beta_1 Y_{t-1} + ... + \beta_p Y_{t-p} + \epsilon_t,
+\end{align*}
+where $\alpha$ is the intercept, the $\beta_i$ are the coefficients of the lags (up to order $p$) and $\epsilon_t$ is the error, modelled as white noise (to help the model account for volatility). \footnote[1]{\href{https://www.machinelearningplus.com/time-series/vector-autoregression-examples-python/}{Intuition of autoregressions}}\\
+
+Vector autoregression is a multivariate forecasting algorithm which is used when two or more time series influence one another. This means that time series are modelled as linear combinations of past values of themselves and other time series in the system. Each time series has a separate equation used to model predictions. For example, a system of equations for a VAR[2] model (a model of order 1) with two time series given by $Y_1$ and $Y_2$ is
+\begin{align*}
+	Y_{1, t} &= \alpha_1 + \beta_{11, 1} Y_{1, t-1} + \beta_{12, 1} Y_{2, t-1} + \epsilon_{1, t}, \\
+	Y_{2, t} &= \alpha_2 + \beta_{21, 1} Y_{1, t-1} + \beta_{22, 1} Y_{2, t-1} + \epsilon_{2, t}.
+\end{align*} 
+
+Since the terms in the equations are interrelated, the values are considered to be endogenous variables, rather than exogenous predictors. \footnote[2]{\href{https://www.machinelearningplus.com/time-series/vector-autoregression-examples-python/}{Intuition and method for vector autoregressions}}
+
+\subsection{Building}
+The following steps describe how to build a VAR model: \footnotemark[2]
+
+\vspace{-0.25cm}
+\begin{enumerate}
+	\itemsep-0.2cm
+	\item Analyse time series characteristics - visualise the time series by plotting them, generally we are looking to check the time series have similar characteristics.
+	\item Test for causation amongst the time series - the time series must have causation or VAR will not be an appropriate model. To test for causation use Granger's Causality test and the cointegration test.
+	\item Test for stationarity - to test for stationarity we can use Augmented Dickey-Fuller test (ADF). If a series is found to be non-stationary we must transform it by differencing the series until it becomes stationary.
+	\item Find optimal order $[p]$ - iteratively fit increasing orders of VAR models and pick the model with the least AIC (Akaike’s Information Criteria). We can also use other best fit comparison estimates of BIC, FPE and HQIC.
+	\item Prepare training and test datasets.
+	\item Train the model.
+	\item Check for serial correlation of residuals -  if there is any we have some pattern in the time series yet to be accounted for by the model so the order of the model should be increased and we should retrain.
+	\item Roll back transformations, if any, to obtain real forecast.
+	\item Evaluate the model using test set - plot actual values vs predicted and use MAPE, ME, MAE, MPE, RMSE, corr and minmax to determine the accuracy of model.
+\end{enumerate} 
+
+\end{document}
