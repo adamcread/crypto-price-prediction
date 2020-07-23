@@ -69,7 +69,7 @@ A model, such as VAR, is said to be \href{https://www.machinelearningplus.com/ti
 \begin{align*}
 	Y_t = \alpha + \beta_1 Y_{t-1} + ... + \beta_p Y_{t-p} + \epsilon_t,
 \end{align*}
-where $\alpha$ is the intercept, the $\beta_i$ are the coefficients of the lags (up to order $p$) and $\epsilon_t$ is the error, modelled as white noise (to help the model account for volatility). \footnote[1]\\
+where $\alpha$ is the intercept, the $\beta_i$ are the coefficients of the lags (up to order $p$) and $\epsilon_t$ is the error, modelled as white noise (to help the model account for volatility).\\
 
 \href{https://www.machinelearningplus.com/time-series/vector-autoregression-examples-python/}{\textbf{Vector autoregression}} is a multivariate forecasting algorithm which is used when two or more time series influence one another. This means that time series are modelled as linear combinations of past values of themselves and other time series in the system. Each time series has a separate equation used to model predictions. For example, a system of equations for a VAR[2] model (a model of order 1) with two time series given by $Y_1$ and $Y_2$ is
 \begin{align*}
@@ -80,7 +80,7 @@ where $\alpha$ is the intercept, the $\beta_i$ are the coefficients of the lags 
 Since the terms in the equations are interrelated, the values are considered to be endogenous variables, rather than exogenous predictors.
 
 \subsection{Building}
-The following steps describe how to build a VAR model: \footnotemark[2]
+The following steps describe how to build a VAR model:
 
 \vspace{-0.25cm}
 \begin{enumerate}
