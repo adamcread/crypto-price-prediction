@@ -1,11 +1,20 @@
 import pandas as pd
-from statsmodels.tsa.api import Holt
-from pypfopt import risk_models
-from pypfopt.efficient_frontier import EfficientFrontier
-from pypfopt.discrete_allocation import DiscreteAllocation
 from datetime import date
+from statsmodels.tsa.api import Holt
+from pypfopt.discrete_allocation import DiscreteAllocation
 
-def exp_smoothing(event=None, context=None):
+# get predictions from ARIMA model
+def model_prediction(data):
+    # train model on historical data
+    model_fit = Holt(data, damped=True, exponential=True).fit()
+
+    # make prediction about next day closing price
+    predicted_value = float(model_fit.predict())
+
+    return predicted_value
+
+# boilerplate trading bot plug in model predictions
+def trading_bot(event=None, context=None):
     # get historical crypto data from gbq (sort by date to ensure data is in correct order)
     historical_data_query = """
         SELECT *
@@ -22,10 +31,8 @@ def exp_smoothing(event=None, context=None):
     for currency in currencies:
         # train model on historical data
         crypto_data = historical_data['{}Close'.format(currency)].to_numpy()
-        model_fit = Holt(crypto_data, damped=True, exponential=True).fit()
 
-        # make prediction about next day closing price
-        predicted_value = float(model_fit.predict())
+        predicted_value = model_prediction(crypto_data)
         closing_value = crypto_data[-1]
 
         # store predicted value and expected return (predicted percentage increase)
@@ -46,12 +53,11 @@ def exp_smoothing(event=None, context=None):
     # calculate updated portfolio value
     pf_value = sum([pf_latest[c+'Bought']*latest_prices[c+'Close'] for c in currencies]) + float(pf_latest['pfUnallocated'])
 
-    # use efficient frontier to obtain weightings of coins to purchase
-    # drop date as it does not need to be included in covariance matrix
-    S = risk_models.risk_matrix(historical_data.drop('date', axis=1))
-    ef = EfficientFrontier(expected_returns, S, gamma=5)
-    ef.min_volatility()
-    cleaned_weights = ef.clean_weights()
+    # calculate weights as a ratio of positive the expected return of the stock is predicted to be
+    # if no positive returns all weights will be set to 0 and a very small amount of the portfolio will be allocated
+    positive_returns = sum([er for er in expected_returns if er > 0])
+    weights = [max(0, x/positive_returns) for x in expected_returns] if positive_returns else [0]*len(expected_returns)
+    cleaned_weights = {expected_returns.index[i]: float(weights[i]) for i in range(len(expected_returns))}
 
     # use weightings to calculate how many coins to purchase
     da = DiscreteAllocation(cleaned_weights, latest_prices, total_portfolio_value=pf_value)
@@ -59,17 +65,14 @@ def exp_smoothing(event=None, context=None):
 
     # for each coin store tomorrows's predicted, today's close, coins bought
     # also store current portfolio value + unallocated money (to help calculate updated portfolio value)
-    pf_updated = {}
+    pf_updated = {'date': date.today().strftime("%Y-%m-%d"), 'pfValue': pf_value, 'pfUnallocated': unallocated}
     for currency in currencies:
         pf_updated['{}Close'.format(currency)] = float(latest_prices['{}Close'.format(currency)])
         pf_updated['{}Predicted'.format(currency)] = float(predicted['{}Predicted'.format(currency)])
         pf_updated['{}Bought'.format(currency)] = float(allocation.get('{}Close'.format(currency), 0))
-    pf_updated['pfValue'] = pf_value
-    pf_updated['pfUnallocated'] = unallocated
 
     # put new portfolio into dataframe and insert today's date
     pf_updated = pd.DataFrame(pf_updated, index=[0])
-    pf_updated.insert(0, 'date', date.today().strftime("%Y-%m-%d"))
 
     # add new portfolio to existing portfolio data and push to gbq
     pf_data = pd.concat([pf_data, pf_updated], ignore_index=True)
@@ -78,4 +81,4 @@ def exp_smoothing(event=None, context=None):
                 project_id="crypto-prediction-286314",
                 if_exists='replace')
 
-exp_smoothing()
+trading_bot()
