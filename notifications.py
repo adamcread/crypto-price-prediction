@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 
 def notification(event=None, content=None):
-    models = ['arima', 'expSmoothing']
+    models = ['arima', 'expSmoothing', 'tbats_model']
     for model in models:
         pf_query = """
                     SELECT *

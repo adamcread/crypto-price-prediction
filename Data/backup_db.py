@@ -2,7 +2,7 @@ import pandas as pd
 
 def backup_database(event=None, context=None):
     # models currently running needing to be backed up
-    models = ['arima', 'expSmoothing']
+    models = ['arima', 'expSmoothing', 'tbats_model']
 
     for model in models:
         # get live portfolio
